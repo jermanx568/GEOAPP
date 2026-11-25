@@ -1,0 +1,193 @@
+@if (sesionLista() && !haySesion()) {
+  <div class="max-w-xl mx-auto p-8 py-16">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-10 text-center">
+      <div class="text-5xl mb-4">🔒</div>
+      <h1 class="text-2xl font-extrabold text-slate-900 mb-2">Inicia sesión para ver tus seguimientos</h1>
+      <p class="text-slate-500 mb-7">
+        Aquí aparecerán los reportes que crees y las incidencias que sigas con «También me afecta».
+        Como invitado puedes seguir explorando el mapa.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a routerLink="/login" class="px-5 py-3 rounded-xl text-sm font-bold text-white bg-teal-700 hover:bg-teal-800 transition-colors">Iniciar sesión</a>
+        <a routerLink="/register" class="px-5 py-3 rounded-xl text-sm font-bold text-teal-800 bg-white border border-teal-200 hover:bg-teal-50 transition-colors">Crear cuenta</a>
+      </div>
+      <a routerLink="/mapa" class="inline-block mt-5 text-sm font-semibold text-slate-500 hover:text-teal-700">Volver al mapa</a>
+    </div>
+  </div>
+} @else {
+<div class="max-w-[1200px] mx-auto p-8 py-10 space-y-8">
+
+  <!-- Header -->
+  <div class="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div>
+        <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight mb-2">Hola, {{ nombreUsuario() }}</h1>
+        <p class="text-slate-500 max-w-2xl">Aquí ves el avance de los reportes que has creado y de las incidencias que sigues.</p>
+      </div>
+
+      <div class="flex gap-3 shrink-0">
+        <button (click)="exportarCsv()" [disabled]="!tarjetas().length"
+                class="bg-white border border-slate-300 text-slate-700 px-4 py-2.5 rounded-lg font-semibold text-sm shadow-sm hover:bg-slate-50 flex items-center gap-2 disabled:opacity-50">
+          ⬇ Exportar Bitácora
+        </button>
+        <button routerLink="/reportar"
+                class="bg-rose-700 hover:bg-rose-800 text-white px-5 py-2.5 rounded-lg font-semibold text-sm shadow-sm flex items-center gap-2 transition-colors">
+          + Nuevo Reporte Vecinal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs reales -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+      <div class="flex justify-between items-start mb-4"><span class="text-xs font-bold uppercase tracking-wider text-slate-600">Reportes creados</span><span>📝</span></div>
+      <div class="text-3xl font-extrabold text-slate-900">{{ mios().length }}</div>
+      <div class="text-xs text-slate-500 mt-1">Iniciados por ti</div>
+    </div>
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+      <div class="flex justify-between items-start mb-4"><span class="text-xs font-bold uppercase tracking-wider text-slate-600">Seguidos activos</span><span>🔔</span></div>
+      <div class="text-3xl font-extrabold text-slate-900">{{ seguidos().length }}</div>
+      <div class="text-xs text-slate-500 mt-1">con "También me afecta"</div>
+    </div>
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+      <div class="flex justify-between items-start mb-4"><span class="text-xs font-bold uppercase tracking-wider text-slate-600">Apoyos recibidos</span><span>🤝</span></div>
+      <div class="text-3xl font-extrabold text-slate-900">{{ apoyosRecibidos() }}</div>
+      <div class="text-xs text-slate-500 mt-1">vecinos respaldaron tus reportes</div>
+    </div>
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+      <div class="flex justify-between items-start mb-4"><span class="text-xs font-bold uppercase tracking-wider text-slate-600">Resueltas</span><span>✅</span></div>
+      <div class="text-3xl font-extrabold text-slate-900">{{ resueltas().length }}</div>
+      <div class="text-xs text-slate-500 mt-1">entre tus reportes y seguimientos</div>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+    <!-- Lista -->
+    <div class="lg:col-span-2 space-y-6">
+
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div class="flex gap-2 bg-slate-100 p-1 rounded-xl flex-wrap">
+          @for (t of tabs(); track t.id) {
+            <button (click)="tabActiva.set(t.id)"
+                    [ngClass]="tabActiva() === t.id ? 'bg-teal-800 text-white' : 'text-slate-600 hover:bg-white'"
+                    class="px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+              {{ t.texto }} ({{ t.n }})
+            </button>
+          }
+        </div>
+        <button (click)="recientesPrimero.set(!recientesPrimero())" class="text-sm text-slate-500 font-medium">
+          Ordenar por: <span class="font-bold text-slate-800">{{ recientesPrimero() ? 'Más recientes' : 'Más antiguos' }} ⇅</span>
+        </button>
+      </div>
+
+      @if (cargando()) {
+        <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center text-slate-500 shadow-sm">Cargando tus seguimientos...</div>
+      } @else if (error()) {
+        <div class="bg-rose-50 text-rose-600 p-4 rounded-xl text-sm font-medium border border-rose-100">{{ error() }}</div>
+      } @else if (!visibles().length) {
+        <div class="bg-white rounded-2xl border border-slate-200 p-10 text-center flex flex-col items-center shadow-sm">
+          <div class="text-4xl mb-3">📭</div>
+          <h3 class="text-lg font-bold text-slate-700 mb-1">No hay reportes en esta categoría</h3>
+          <p class="text-sm text-slate-500 max-w-md">{{ mensajeVacio() }}</p>
+          @if (tabActiva() === 'todas' || tabActiva() === 'mios') {
+            <button routerLink="/reportar" class="mt-5 bg-teal-800 hover:bg-teal-900 text-white px-5 py-2.5 rounded-lg font-bold text-sm">Crear mi primer reporte</button>
+          }
+        </div>
+      } @else {
+        @for (t of visibles(); track t.inc.id) {
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full" [style.background]="t.cat.color"></div>
+
+            <div class="flex justify-between items-start mb-3 gap-3 flex-wrap">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-slate-50 border border-slate-200 text-slate-700">{{ t.cat.emoji }} {{ t.catNombre }}</span>
+                <span class="text-xs text-slate-400 font-medium">#{{ t.inc.id }}</span>
+                <span class="text-xs text-slate-400 font-medium">• {{ t.inc.esMia ? 'Reportado por ti' : 'Lo sigues' }}</span>
+                <span class="text-xs text-slate-400 font-medium">🕒 {{ t.hace }}</span>
+              </div>
+              <span class="text-xs font-bold px-3 py-1 rounded-full border"
+                    [style.color]="t.est.color" [style.background]="t.est.fondo" [style.border-color]="t.est.color">
+                ● {{ t.est.texto }}
+              </span>
+            </div>
+
+            <h2 class="text-xl font-bold text-slate-900 mb-1">{{ t.inc.title }}</h2>
+            <p class="text-sm text-slate-500 mb-1">📍 {{ t.inc.par }}</p>
+            @if (t.inc.descr) {
+              <p class="text-sm text-slate-600 mb-5">{{ t.inc.descr }}</p>
+            } @else {
+              <div class="mb-5"></div>
+            }
+
+            <!-- Progreso según el estado real -->
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 mb-6">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-bold text-slate-700">{{ t.est.descripcion }}</span>
+                <span class="text-xs font-extrabold" [style.color]="t.est.color">{{ t.est.pct }}% completado</span>
+              </div>
+              <div class="w-full bg-slate-200 rounded-full h-2 mb-3">
+                <div class="h-2 rounded-full" [style.width.%]="t.est.pct" [style.background]="t.est.color"></div>
+              </div>
+              <div class="grid grid-cols-3 gap-2 text-[11px] font-medium">
+                @for (p of t.pasos; track p.nombre) {
+                  <span [ngClass]="p.hecho ? 'text-slate-700' : 'text-slate-400'">
+                    {{ p.hecho ? '✅' : '○' }} {{ p.nombre }}
+                    @if (p.fecha) { <span class="block text-slate-400 font-normal">{{ p.fecha }}</span> }
+                  </span>
+                }
+              </div>
+            </div>
+
+            <!-- Pie -->
+            <div class="flex items-center justify-between pt-4 border-t border-slate-100 flex-wrap gap-3">
+              <div class="flex items-center gap-2">
+                <span class="text-rose-500">❤</span>
+                <span class="text-sm font-bold text-slate-800">{{ t.inc.apoyos }}</span>
+                <span class="text-sm text-slate-500">{{ t.inc.apoyos === 1 ? 'vecino respalda' : 'vecinos respaldan' }} este reporte</span>
+              </div>
+              <div class="flex gap-3">
+                @if (!t.inc.esMia) {
+                  <button (click)="dejarDeSeguir(t)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold transition-colors">Dejar de seguir</button>
+                }
+                <button routerLink="/mapa" [queryParams]="{ inc: t.inc.id }" class="bg-teal-900 hover:bg-teal-950 text-white px-3 xl:px-5 py-2 rounded-lg text-sm whitespace-nowrap font-bold shadow-md transition-colors">Ver en el mapa →</button>
+              </div>
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Columna derecha: resumen real -->
+    <div class="space-y-6">
+      <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+        <h3 class="font-bold text-slate-800 mb-4">📊 Resumen por estado</h3>
+
+        @if (tarjetas().length) {
+          <div class="space-y-4">
+            @for (r of resumen(); track r.texto) {
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <span class="font-medium text-slate-700">{{ r.texto }}</span>
+                  <span class="font-bold text-slate-900">{{ r.n }}</span>
+                </div>
+                <div class="w-full bg-slate-100 rounded-full h-2">
+                  <div class="h-2 rounded-full" [style.width.%]="r.ancho" [style.background]="r.color"></div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="text-sm text-slate-500">Cuando tengas reportes o seguimientos, verás aquí cómo van.</p>
+        }
+
+        <button routerLink="/mapa" class="mt-6 w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-xl transition-colors text-sm">
+          🗺 Abrir Mapa de Fiscalización
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+}

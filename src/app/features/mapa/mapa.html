@@ -1,0 +1,81 @@
+<div class="relative w-full h-full">
+  <div id="map" class="absolute inset-0 z-0 bg-[#e5e7eb]"></div>
+
+  <!-- FILTROS POR ESTADO -->
+  <div class="absolute top-6 left-6 z-10 flex flex-wrap gap-2 max-w-[calc(100%-13rem)]">
+    @for (f of filtros; track f.valor) {
+      <button
+        (click)="filtroEstado.set(f.valor)"
+        class="shadow-sm px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-2 border"
+        [class]="filtroEstado() === f.valor
+          ? 'bg-teal-800 border-teal-800 text-white hover:bg-teal-900'
+          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'">
+        @if (f.color) {
+          <span class="w-2 h-2 rounded-full" [style.background]="f.color"></span>
+        }
+        {{ f.texto }}
+        <span class="text-[11px] font-semibold opacity-70">{{ conteos()[f.valor] }}</span>
+      </button>
+    }
+  </div>
+
+  <!-- BOTÓN FLOTANTE DE INCIDENCIAS -->
+  <div class="absolute top-6 right-6 z-10 flex flex-col items-end gap-2">
+    <button
+      (click)="panelAbierto.set(!panelAbierto())"
+      class="bg-white border border-slate-200 shadow-md px-4 py-2 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2">
+      📋 Incidencias ({{ incidencias().length }})
+      <span class="text-xs text-slate-400">{{ panelAbierto() ? '▴' : '▾' }}</span>
+    </button>
+
+    @if (panelAbierto()) {
+      <div class="w-[360px] max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col max-h-[calc(100vh-11rem)] overflow-hidden border border-slate-100">
+
+        <div class="p-4 border-b border-slate-100">
+          <h2 class="font-bold text-base text-slate-800">Incidencias</h2>
+          <p class="text-xs text-slate-500 mt-1">
+            Mostrando {{ incidencias().length }} de {{ conteos()['todos'] }} registradas
+          </p>
+        </div>
+
+        <div class="overflow-y-auto p-3 space-y-3 bg-slate-50/50">
+          @for (inc of incidencias(); track inc.id) {
+            <div
+              (click)="irA(inc)"
+              class="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer group">
+
+              <div class="flex justify-between items-start mb-2 gap-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md"
+                      [style.color]="catDe(inc.cat).color"
+                      [style.background]="catDe(inc.cat).color + '1a'">
+                  {{ catDe(inc.cat).emoji }} {{ inc.cat_nombre || catDe(inc.cat).nombre }}
+                </span>
+                <span class="text-xs text-slate-400 whitespace-nowrap">{{ inc.date }}</span>
+              </div>
+
+              <h3 class="font-bold text-sm text-slate-800 mb-1 group-hover:text-teal-700 transition-colors">
+                {{ inc.title }}
+              </h3>
+              @if (inc.descr) {
+                <p class="text-xs text-slate-500 mb-2 line-clamp-2 leading-relaxed">{{ inc.descr }}</p>
+              }
+
+              <p class="text-xs text-slate-600 mb-3">📍 <span class="font-medium">{{ inc.par }}</span></p>
+
+              <div class="pt-3 border-t border-slate-100 flex justify-between items-center">
+                <span class="text-[11px] font-bold flex items-center gap-1.5"
+                      [style.color]="estadoDe(inc.st).color">
+                  <span class="w-2 h-2 rounded-full" [style.background]="estadoDe(inc.st).color"></span>
+                  {{ estadoDe(inc.st).texto }}
+                </span>
+                <span class="text-xs font-bold text-teal-700">Ver en el mapa ›</span>
+              </div>
+            </div>
+          } @empty {
+            <p class="text-sm text-slate-500 text-center py-6">No hay incidencias con este filtro.</p>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
